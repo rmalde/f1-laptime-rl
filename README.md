@@ -6,6 +6,78 @@ https://github.com/rmalde/f1-laptime-rl/raw/main/media/showcase.mp4
 
 *Four cars on the same clock: Qwen after RL (76.1 s), Claude Opus 5.5 (85.9 s), a hand-written centerline baseline (87.2 s), and untrained Qwen (174.6 s). Download [`media/replay.html`](media/replay.html) for the interactive version, which includes every car's code.*
 
+## New: trained Qwen, Claude Opus, and GPT-6 Astra in 3D
+
+The new replay compares three selected programs on the same circuit:
+
+| Policy | Lap time | Source |
+|---|---:|---|
+| [GPT-6 Astra](examples/gpt6_astra_eval.py) | **73.286 s** | Single platform evaluation attempt, reasoning effort `max` |
+| [Trained Qwen3.6-35B-A3B](examples/qwen_trained_best_128.py) (35B total / 3B active) | **74.805 s** | Best of the 128-sample training batch at step 228 |
+| [Claude Opus 5.5](examples/claude_opus_best_128.py) | **78.031 s** | Best of a 128-attempt evaluation |
+
+These are selected-program results, not a matched evaluation of model distributions.
+Qwen was selected across training steps; Opus was also the fastest across two inspected
+128-attempt evaluations (256 attempts total). Astra is the single completed attempt
+in its platform evaluation, not a best-of-128 result. See [policy provenance](replay3d/provenance.json)
+for source IDs, exact times, and file hashes. The simulator and historical results below
+retain their original reward; this addition compares lap times.
+
+From the repository root, run:
+
+```bash
+python3 -m http.server 8768 --bind 127.0.0.1
+```
+
+Open **http://localhost:8768/replay3d/?comparison=champions&camera=f1**.
+No API key or JavaScript build is needed. Three.js is bundled locally; a WebGL-capable
+browser is required. The portable viewer uses system fonts and Trajectory's periwinkle
+and terracotta liveries for Qwen and Opus, mint for Astra, with a wordmark on the trained car's rear wing.
+
+Three.js's atmospheric `Sky`, `EffectComposer`, `UnrealBloomPass`, and `OutputPass`
+add warm sunlight, long shadows, HDR highlight bloom, and filmic tone mapping.
+The **Cinema** toggle switches the extra post-processing off for faster playback;
+it starts off on small screens or devices without the required HDR render-target support.
+All add-ons are bundled from the same Three.js r160 release under its MIT license.
+
+The venue includes 136 seating sections (42 covered grandstands and 94 open bleachers)
+with about 69,000 spectators, including 7,000 standing fans, catch
+fencing, a marked pit lane with service boxes, 100 crew members, spare cars, tire
+stacks and equipment carts, a paddock with team awnings and transporters, a hospitality tower,
+trackside screens, a pedestrian bridge, parking, and wooded surroundings backed by
+continuous, irregular hills.
+Grandstand structures, crowds, trees, parked cars, and fence hardware use instanced geometry to limit draw
+calls. Crowd arms cheer with individual phases in an instanced vertex shader, driven by
+replay time so pausing and scrubbing remain deterministic. Pit crews and spare cars
+are decorative; the recorded drivers do not make pit stops.
+All scenery is deterministic and procedural; no external models or textures
+are downloaded. Trackside broadcast cameras sit above the catch fencing.
+
+The **F1 broadcast** camera cuts between low drone, front tracking, trackside, cockpit,
+and chase views. Closing gaps and lead changes trigger onboard shots, and a fixed camera
+covers the finish. Pause, scrub, change playback speed, or select a manual camera.
+These are independent, non-colliding ghost laps; the policies do not react to opponents.
+Overlapping cars both remain visible at 60% opacity, with stable compositing order
+and a smooth return to opaque as their bodies separate. Both timing traces remain
+unchanged. Normal broadcast shots last 7–8 seconds; battle cuts wait at least 5 seconds. The overlay keeps names, elapsed lap timers, speed, and playback controls.
+Each lap timer follows playback and freezes at that car's recorded finish time.
+The painted start/finish line matches the simulator's timing reference point. The final
+unsaved fraction of a 20 Hz trace is visually interpolated to that line at the recorded
+finish time, without changing lap times or simulator physics.
+
+To reproduce all three lap times with the existing simulator:
+
+```bash
+python f1.py sim examples/qwen_trained_best_128.py examples/claude_opus_best_128.py examples/gpt6_astra_eval.py
+```
+
+To check the viewer after installing the repository requirements:
+
+```bash
+python -m playwright install chromium
+python test_replay3d.py
+```
+
 ## The task
 
 - **One fixed track.** The Trajectory Grand Prix Circuit is 5.35 km long, with a 1 km main straight, a hairpin, esses, a chicane and a fast sweeper.
